@@ -18,7 +18,9 @@ np.random.seed(2023)
 torch.manual_seed(2023)
 
 # Check if CUDA is available
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = "cpu"
+
 #####################################################
 ##################### model definition ####################
 #####################################################
@@ -258,6 +260,7 @@ class TFBlock(nn.Module):
         # x = self.pos_embed(self.embed(src))
         # seq_len = x.size(1)
         # mask = torch.tril(torch.ones(seq_len,seq_len)).unsqueeze(0).unsqueeze(0)
+        # x = self.layer_norm(x) if self.norm else x
         attn_output = self.mha(x, x, x, mask)
         out = self.dropout(attn_output) if self.drop is not None else attn_output
         out = x + out if self.residual else out

@@ -14,24 +14,30 @@ import matplotlib.pyplot as plt
 print(torch.__version__)
 import argparse
 import yaml
+from torch.utils.tensorboard import SummaryWriter
 
 from src.config import Config 
 from src.utils import fix_random_seed, create_folder, ensure_path
 from src.data import gen_simple_data
-from src.model import TFModel, simpleT
+from src.model import TFModel, simpleT, simple2layerT
 from src.train import train
 from src.utils import plot_err_curve, Timer, time_str
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_path", type=str, default="./save",
+    parser.add_argument("--ckpt_path", type=str, default="./save",
                         help="save path for model ckpt")
     parser.add_argument("--yaml", type=str, help="yaml file to load from")
 
     parser.add_argument("--max_batch_size", type=int, default=None,
                         help="Maximal batch size to try with --batch_size auto")
+    
+    return parser.parse_args()
 
 def main():
+
+    args = parse_args()
+    
     
     seed = 2023
     fix_random_seed(seed)
@@ -50,11 +56,9 @@ def main():
         config_args = yaml.safe_load(file)
     # Create config object
     config = Config(**config_args)
+    config.ckpt_path = args.ckpt_path or config.ckpt_path
     
-    
-    
-    
-
+    ###### set up data
     vocab = torch.arange(config.vocab_size).type(torch.LongTensor)
 
     src, src_test = torch.zeros(config.sample_size,config.max_seq_len).long(), torch.zeros(config.sample_size_test,config.max_seq_len).long()
@@ -78,6 +82,9 @@ def main():
     #              residual=True, dropout=0.1, norm=True, outdim_truncate=False, trainable=[True, True])
     
     # print(model)
+
+    # model = simple2layerT(config.vocab_size, config.d_model, config.num_heads, config.max_seq_len, add_embed=True, train_from_scratch=False,
+    #              residual=True, dropout=0.1, norm=True, outdim_truncate=False, trainable=[True, True])
 
     # output_test = model(src_test)
     # print(output_test)
@@ -116,10 +123,29 @@ def main():
 
     ### training
     timer = Timer()
+    
     ckpt_path = config.ckpt_path if config.ckpt_path else "./save"
-    ensure_path(ckpt_path)
-    model, err_arr = train(model, src, src_test, optimizer, setting_params = config_args, print_output = True, criterion=criterion, scheduler=scheduler, ckpt_path = ckpt_path)
+    ensure_path(ckpt_path, remove = True)
 
+    ## save config
+    config_dict = vars(config)
+    # Writing to a YAML file
+    with open(f'{ckpt_path}/config.yaml', 'w') as file:
+        yaml.dump(config_dict, file)
+
+    # Initialize TensorBoard Summary Writer
+    writer = SummaryWriter(f"{ckpt_path}")
+
+    model, err_arr = train(
+            model, src, src_test, optimizer, 
+            setting_params = config_args, print_output = False, criterion=criterion, 
+            scheduler=scheduler, 
+            ckpt_path = ckpt_path, writer = writer,log_param = False,
+        )
+
+    # Close the TensorBoard writer
+    writer.close()
+    
     print(f"time elapsed: {time_str(timer.end())}")
     model_dict = model.state_dict()
     ckpt = {

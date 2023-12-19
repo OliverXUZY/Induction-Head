@@ -18,7 +18,9 @@ np.random.seed(2023)
 torch.manual_seed(2023)
 
 # Check if CUDA is available
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = "cpu"
+
 print("using device: ", DEVICE)
 
 #####################################################
@@ -27,7 +29,8 @@ print("using device: ", DEVICE)
 
 def train(model, src, src_test, optimizer, criterion=nn.CrossEntropyLoss(), 
           setting_params=None, other_params=None, print_output=False, planted_model=False, scheduler=None,
-          anneal=False, plot_attn=False, plot_attn_name=None, ckpt_path = None):
+          anneal=False, plot_attn=False, plot_attn_name=None, ckpt_path = None, 
+          log_param = False, writer = None):
     """
     Train a simple language model and evaluate train/test loss/error over epochs.
     Args:
@@ -52,6 +55,7 @@ def train(model, src, src_test, optimizer, criterion=nn.CrossEntropyLoss(),
 
     
     
+
     # Move the model to the specified device
     model = model.to(DEVICE)
     src = src.to(DEVICE)
@@ -72,6 +76,7 @@ def train(model, src, src_test, optimizer, criterion=nn.CrossEntropyLoss(),
     err_arr = np.zeros((num_epoch, 4))
 
     timer = Timer()
+    best_err = 1e4
     for epoch in range(num_epoch):
         model.train() # useful if dropout or batchnorm etc is turned on
         perm = np.arange(sample_size, dtype = int)
@@ -111,6 +116,7 @@ def train(model, src, src_test, optimizer, criterion=nn.CrossEntropyLoss(),
             _ , _ = plot_attention(model, src[0,:], fig_name=plot_attn_name+f"_train_epoch_{epoch}", savefig_dir='Figs/attn')
             _ , _ = plot_attention(model, src_test[0,:], fig_name=plot_attn_name+f"_test_epoch_{epoch}", savefig_dir='Figs/attn')
         
+        
         if ckpt_path:
             model_dict = model.state_dict()
             ckpt = {
@@ -119,10 +125,32 @@ def train(model, src, src_test, optimizer, criterion=nn.CrossEntropyLoss(),
                 }
             if setting_params.get('save_epoch') and (epoch+1) % setting_params['save_epoch'] == 0:
                 torch.save(ckpt, os.path.join(ckpt_path, 'epoch-{}.pth'.format(epoch + 1)))
+            
+            if test_err.item() < best_err:
+                best_err = test_err.item()
+                torch.save(ckpt, os.path.join(ckpt_path, 'best_err.pth'.format(epoch + 1)))
         
-        if (epoch+1) % setting_params['save_epoch'] == 10:
+        if (epoch+1) % 50 == 0:
             print(f"----> Epoch: {epoch+1}, Train Loss: {loss.item():.2f}, Train Error: {err_arr[epoch,2]:.2f}, Test Error: {err_arr[epoch,3]:.2f},  \
                   time elapsed: {time_str(timer.end())} | {time_str(timer.end()/(epoch+1)*num_epoch)}")
+        
+        # Log metrics to TensorBoard
+        if writer is not None:
+            writer.add_scalar('Loss/Train', loss.item(), epoch)
+            writer.add_scalar('Loss/Test', loss_test.item(), epoch)
+            writer.add_scalar('Error/Train', train_err.item(), epoch)
+            writer.add_scalar('Error/Test', test_err.item(), epoch)
+
+
+            # Optional: Log model parameters and gradients
+            if log_param:
+                for name, param in model.named_parameters():
+                    writer.add_histogram(name, param, epoch)
+                    if param.grad is not None:
+                        writer.add_histogram(f'{name}.grad', param.grad, epoch)
+
+            
+
 
     return model, err_arr
 
