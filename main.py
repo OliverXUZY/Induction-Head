@@ -25,9 +25,9 @@ from src.utils import plot_err_curve, Timer, time_str
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ckpt_path", type=str, default="./save",
+    parser.add_argument("--ckpt_path", type=str, default=None,
                         help="save path for model ckpt")
-    parser.add_argument("--yaml", type=str, help="yaml file to load from")
+    parser.add_argument("--config", type=str, default=None, help="config file to load from")
 
     parser.add_argument("--max_batch_size", type=int, default=None,
                         help="Maximal batch size to try with --batch_size auto")
@@ -52,11 +52,16 @@ def main():
     
     ###### set up config
     # Load YAML file
-    with open('./config/config.yaml', 'r') as file:
+    config_file = args.config or './config/config.yaml'
+    with open(config_file, 'r') as file:
         config_args = yaml.safe_load(file)
+    # print(config_args['ckpt_path'])
     # Create config object
     config = Config(**config_args)
     config.ckpt_path = args.ckpt_path or config.ckpt_path
+
+    # print(config.ckpt_path)
+    # assert False
     
     ###### set up data
     vocab = torch.arange(config.vocab_size).type(torch.LongTensor)

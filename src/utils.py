@@ -157,15 +157,20 @@ def plot_attention(model, tokens, fig_name, savefig_dir='Figs', is_mask=False, n
     if layer == 0:
         queries = model.h[0].mha.W_q(seq)
         keys = model.h[0].mha.W_k(seq)        
-    elif layer ==1:
+    elif layer == 1:
         attn_output = model.h[0].mha(seq, seq, seq, mask)
         out = model.h[0].dropout(attn_output) if model.h[0].drop is not None else attn_output
         out = seq + out if model.h[0].residual else out
         seq =  model.h[0].layer_norm(out) if model.h[0].norm else out
         queries = model.h[1].mha.W_q(seq)
         keys = model.h[1].mha.W_k(seq)
+    elif layer == 2:
+        for layer_id in [0,1]:
+            seq = model.h[layer_id](seq, mask)
+        queries = model.h[2].mha.W_q(seq)
+        keys = model.h[2].mha.W_k(seq)
     else:
-        warnings.warn('Layer more than 2 not currently supported!')
+        warnings.warn('Layer more than 3 not currently supported!')
     queries = queries.view(1, seq_len, num_heads, d_k).transpose(1, 2)
     keys = keys.view(1, seq_len, num_heads, d_k).transpose(1, 2)
     

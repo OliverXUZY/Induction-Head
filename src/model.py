@@ -18,8 +18,8 @@ np.random.seed(2023)
 torch.manual_seed(2023)
 
 # Check if CUDA is available
-# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-DEVICE = "cpu"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE = "cpu"
 
 #####################################################
 ##################### model definition ####################
@@ -273,13 +273,14 @@ class TFModel(nn.Module):
                  num_hidden_layers = 1,
                  ):
         super(TFModel, self).__init__()
+        self.norm = config.norm
         #assert d_model == vocab_size + max_seq_len, "d_model must be equal to vocab_size + max_seq_len"
         self.vocab_size = config.vocab_size
         self.embed = Embedding(config.vocab_size, config.d_model, init_weight = config.init_weight, add_embed=config.add_embed, trainable=config.trainable[0], train_from_scratch=config.train_from_scratch)
         self.pos_embed = PositionalEmbedding(config.max_seq_len,config. d_model, init_weight = config.init_weight, add_embed=config.add_embed, trainable=config.trainable[1], train_from_scratch=config.train_from_scratch)
 
         self.h = nn.ModuleList([TFBlock(config, layer_idx=i) for i in range(num_hidden_layers)])
-
+        self.layer_norm = nn.LayerNorm(config.d_model)
         self.fc = nn.Linear(config.vocab_size, config.vocab_size) if config.outdim_truncate else nn.Linear(config.d_model, config.vocab_size)
 
         self.outdim_truncate = config.outdim_truncate
@@ -288,8 +289,10 @@ class TFModel(nn.Module):
         x = self.pos_embed(self.embed(src))
         seq_len = x.size(1)
         mask = torch.tril(torch.ones(seq_len,seq_len)).unsqueeze(0).unsqueeze(0).to(DEVICE)
+        out = x
         for i, (block) in enumerate(self.h):
-            out = block(x, mask)
+            out = block(out, mask)
+        # out =  self.layer_norm(out) if self.norm else out
         out = self.fc(out[:,:,range(self.vocab_size)]) if self.outdim_truncate else self.fc(out)
         return out
 
