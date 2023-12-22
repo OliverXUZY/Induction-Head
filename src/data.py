@@ -66,6 +66,10 @@ def gen_simple_data(vocab, max_seq_len, sample_size, pattern='aaa', pattern_samp
             else: # max_seq_len not divisible by  pattern_sample_len, then fill the remaining tokens by random ones
                 data[i, :-r] = vocab[pattern_sample].repeat(max_seq_len // pattern_len)
                 data[i, -r:] = torch.multinomial(torch.ones(vocab_size)/vocab_size, r, replacement = True)
+        elif pattern == "com_random":
+            data[i, :] = torch.multinomial(torch.ones(vocab_size)/vocab_size,  max_seq_len, replacement=True)
+
+
         else: # for a given pattern
             assert max_seq_len % len(pattern) == 0, 'length of pattern needs to be divisible by max_seq_len'
             data[i, :] = vocab[pattern].repeat(max_seq_len // len(pattern))

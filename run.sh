@@ -1,1 +1,1 @@
-python main.py --ckpt_path ./save/layer2/run4
+python main.py --config ./config/config_layer2.yaml --ckpt_path ./save/layer2/run_com_random --pattern com_random

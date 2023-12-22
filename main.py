@@ -32,6 +32,9 @@ def parse_args():
     parser.add_argument("--max_batch_size", type=int, default=None,
                         help="Maximal batch size to try with --batch_size auto")
     
+    parser.add_argument("--pattern", type=str, default='random',
+                        help="pattern for generating data")
+    
     return parser.parse_args()
 
 def main():
@@ -59,6 +62,7 @@ def main():
     # Create config object
     config = Config(**config_args)
     config.ckpt_path = args.ckpt_path or config.ckpt_path
+    pattern  = args.pattern
 
     # print(config.ckpt_path)
     # assert False
@@ -67,7 +71,7 @@ def main():
     vocab = torch.arange(config.vocab_size).type(torch.LongTensor)
 
     src, src_test = torch.zeros(config.sample_size,config.max_seq_len).long(), torch.zeros(config.sample_size_test,config.max_seq_len).long()
-    src[range(0,config.sample_size),:] = gen_simple_data(vocab, config.max_seq_len, config.sample_size, pattern='random')
+    src[range(0,config.sample_size),:] = gen_simple_data(vocab, config.max_seq_len, config.sample_size, pattern=pattern)
     src_test[range(0,config.sample_size_test),:] = gen_simple_data(vocab, config.max_seq_len, config.sample_size_test, pattern='random')
     
     print("src_test.shape", src_test.shape)
