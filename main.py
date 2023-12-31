@@ -46,11 +46,11 @@ def main():
     fix_random_seed(seed)
 
             
-    save_plot = True
-    save_plot_dir = f'Figs/seed_{seed}'
+    # save_plot = True
+    # save_plot_dir = f'Figs/seed_{seed}'
 
-    create_folder('Figs')
-    create_folder(f'Figs/seed_{seed}')
+    # create_folder('Figs')
+    # create_folder(f'Figs/seed_{seed}')
 
     
     ###### set up config
