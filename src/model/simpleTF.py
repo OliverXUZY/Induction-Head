@@ -10,7 +10,7 @@ import scipy as sp
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from .utils import *
+from ..utils import *
 warnings.simplefilter("ignore")
 print(torch.__version__)
 

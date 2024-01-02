@@ -18,8 +18,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.config import Config 
 from src.utils import fix_random_seed, create_folder, ensure_path
-from src.data import gen_simple_data
-from src.model import TFModel, simpleT, simple2layerT
+from src.data.gen_simple import gen_simple_data
+from src.model.simpleTF import TFModel, simpleT, simple2layerT
 from src.train import train
 from src.utils import plot_err_curve, Timer, time_str
 
@@ -55,7 +55,7 @@ def main():
     
     ###### set up config
     # Load YAML file
-    config_file = args.config or './config/config.yaml'
+    config_file = args.config or './config/config_layer2.yaml'
     with open(config_file, 'r') as file:
         config_args = yaml.safe_load(file)
     # print(config_args['ckpt_path'])
@@ -74,7 +74,10 @@ def main():
     src[range(0,config.sample_size),:] = gen_simple_data(vocab, config.max_seq_len, config.sample_size, pattern=pattern)
     src_test[range(0,config.sample_size_test),:] = gen_simple_data(vocab, config.max_seq_len, config.sample_size_test, pattern='random')
     
+    print("src.shape", src.shape)
+
     print("src_test.shape", src_test.shape)
+
 
 
     ###### set up model
