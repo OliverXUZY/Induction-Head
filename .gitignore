@@ -1,6 +1,8 @@
 .DS_Store
 
 src/__pycache__
+src/data/__pycache__
+src/model/__pycache__
 
 save/
 

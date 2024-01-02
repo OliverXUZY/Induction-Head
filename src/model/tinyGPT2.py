@@ -16,6 +16,11 @@ from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 
 class tinyGPT2Block(nn.Module):
+    '''
+    Copied from 
+    https://github.com/huggingface/transformers/blob/aa4a0f8ef37eb5d42b4e3810f37e554585c90d41/src/transformers/models/gpt2/modeling_gpt2.py#L361
+
+    '''
     def __init__(self, config, layer_idx=None):
         super().__init__()
         hidden_size = config.hidden_size
@@ -61,7 +66,7 @@ class tinyGPT2Block(nn.Module):
         # feed_forward_hidden_states = self.mlp(hidden_states)
         # residual connection
         # hidden_states = residual + feed_forward_hidden_states
-        hidden_states = residual + hidden_states
+        # hidden_states = residual + hidden_states
 
         if use_cache:
             outputs = (hidden_states,) + outputs
@@ -72,6 +77,11 @@ class tinyGPT2Block(nn.Module):
 
 
 class tinyGPT2Model(GPT2Model):
+    '''
+    copied from
+    https://github.com/huggingface/transformers/blob/aa4a0f8ef37eb5d42b4e3810f37e554585c90d41/src/transformers/models/gpt2/modeling_gpt2.py#L665
+
+    '''
     def __init__(self, config):
         super().__init__(config)
 
@@ -206,6 +216,11 @@ class tinyGPT2Model(GPT2Model):
         
 
 class tinyGPT2LMHeadModel(GPT2LMHeadModel):
+    '''
+    Copied from 
+    https://github.com/huggingface/transformers/blob/aa4a0f8ef37eb5d42b4e3810f37e554585c90d41/src/transformers/models/gpt2/modeling_gpt2.py#L944
+    
+    '''
     _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, config):

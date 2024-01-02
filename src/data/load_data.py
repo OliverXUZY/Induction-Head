@@ -99,7 +99,8 @@ def main():
     # Iterate over the first few examples of the dataset and print them
     for example in train_sets.take(1):  # Adjust the number in take() to see more examples
         print(len(example['input_ids']))
-        # print(example)
+        print(example['text'])
+        print(tokenizer.decode(example['text']))
 
 
 

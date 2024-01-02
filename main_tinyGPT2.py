@@ -101,7 +101,7 @@ def main():
 
     
     ###### Load and preprocess the dataset
-    block_size = 128  # Adjust based on your GPU memory
+    block_size = 256  # Adjust based on your GPU memory
     train_set = load_dataset_for_training(tokenizer, block_size)
 
     # Data collator used for dynamic padding
