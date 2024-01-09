@@ -5,6 +5,9 @@ import pickle
 import json
 from datasets import load_dataset, Dataset
 from transformers import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config
+from .gen_simple import gen_simple_data
+import torch
+
 
 def download_dataset(streaming_samples = 5000, input_file_path = 'data/subset5000.jsonl'):
     dataset = "wikitext"
@@ -18,7 +21,7 @@ def download_dataset(streaming_samples = 5000, input_file_path = 'data/subset500
     streaming_samples = 5000
 
 
-def load_dataset_for_training(tokenizer, block_size=128):
+def load_dataset_for_training(tokenizer, block_size=128, verbose = True):
     dataset = "wikitext"
     ds = load_dataset(
             "Skylion007/openwebtext",
@@ -38,6 +41,13 @@ def load_dataset_for_training(tokenizer, block_size=128):
 
 
     train_sets = tokenized_train.map(group_texts, batched=True, fn_kwargs={"block_size": block_size})
+
+    if verbose:
+        print("see first example: ")
+        for example in train_sets.take(1):  # Adjust the number in take() to see more examples
+            print(len(example['input_ids']))
+            print(example['text'])
+            print(tokenizer.decode(example['text']))
 
     
     return train_sets
@@ -77,6 +87,50 @@ def group_texts(examples, block_size = 4):
     return result
 
 
+def create_dataset(tokenizer, vocab, max_seq_len, sample_size, pattern, verbose = True):
+    val = ["Lizard", "koala", "panda", "snake", "cheetah"]
+    mapping = {}
+    for i in vocab:
+        i = i.item()
+        # print("vocab: ", i.item())
+        mapping[i] = val[i]
+    # Generate data
+    data = gen_simple_data(vocab, max_seq_len, sample_size, pattern)
+    # print(data)
+    # print(data.shape)
+    
+    # Convert to a suitable format, e.g., a list of dictionaries
+    formatted_data = {'id': data}
+
+    # Create and return a Dataset object
+    raw_dataset = Dataset.from_dict(formatted_data)
+
+    # print(raw_dataset[0])
+    
+
+    def id_to_text(example):
+        list_of_words = [mapping[i] for i in example['id']]
+        example['text'] = " ".join(list_of_words)
+
+        return example
+    
+    raw_dataset = raw_dataset.map(id_to_text)
+    print(raw_dataset[0])
+    
+    def tokenize_function(examples):
+        return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=max_seq_len)
+
+    # Tokenize the dataset
+    tokenized_dataset = raw_dataset.map(tokenize_function, batched=True)
+
+    if verbose:
+        print(tokenized_dataset[0])
+
+    return tokenized_dataset
+
+
+
+
 def main():
     # f = download_dataset()
     # print(f)
@@ -91,9 +145,13 @@ def main():
 
     # print(group_texts(examples))
 
+    
+    
+    
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     tokenizer.pad_token = tokenizer.eos_token
 
+    
     train_sets = load_dataset_for_training(tokenizer = tokenizer)
 
     # Iterate over the first few examples of the dataset and print them
@@ -101,6 +159,22 @@ def main():
         print(len(example['input_ids']))
         print(example['text'])
         print(tokenizer.decode(example['text']))
+    
+    print("============")
+    
+    
+
+    vocab = torch.arange(5).type(torch.LongTensor)
+    
+
+    data = gen_simple_data(vocab, max_seq_len = 128, sample_size = 20, pattern="random")
+    
+
+    tokenized_dataset = create_dataset(tokenizer=tokenizer, vocab = vocab, max_seq_len = 60, sample_size = 20, pattern="random")
+
+    print(tokenized_dataset[0])
+
+
 
 
 
